@@ -1,0 +1,13 @@
+{
+  "projects": [
+    {
+      "name": "ton",
+      "path": "./sources/marketon.tact",
+      "output": "./sources/dist",
+      "options": {
+        "debug": true,
+        "external": true
+      }
+    }
+  ]
+}

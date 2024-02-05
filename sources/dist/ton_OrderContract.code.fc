@@ -1,0 +1,140 @@
+#pragma version =0.4.3;
+#pragma allow-post-modification;
+#pragma compute-asm-ltr;
+
+#include "ton_OrderContract.headers.fc";
+#include "ton_OrderContract.stdlib.fc";
+#include "ton_OrderContract.constants.fc";
+#include "ton_OrderContract.storage.fc";
+
+;;
+;; Contract OrderContract functions
+;;
+
+(slice, slice) $OrderContract$_contract_init(slice $productID, slice $orderID) impure inline_ref {
+    var (($self'productID, $self'orderID)) = (null(), null());
+    $self'productID = $productID;
+    $self'orderID = $orderID;
+    return ($self'productID, $self'orderID);
+}
+
+((slice, slice), slice) $OrderContract$_fun_balance((slice, slice) $self) impure inline_ref {
+    var (($self'productID, $self'orderID)) = $self;
+    return (($self'productID, $self'orderID), $Int$_fun_toCoinsString(__tact_my_balance()));
+}
+
+;;
+;; Receivers of a Contract OrderContract
+;;
+
+(((slice, slice)), ()) %$OrderContract$_internal_empty((slice, slice) $self) impure inline {
+    var ($self'productID, $self'orderID) = $self;
+    __tact_debug_str(__gen_slice_string_22a6a2a99263a76cf7ab87fc0ed5e0f266dd926fac11446b1c38bc84fff439ad());
+    return (($self'productID, $self'orderID), ());
+}
+
+(((slice, slice)), ()) $OrderContract$_internal_binary_TransferAmount((slice, slice) $self, (slice, int) $msg) impure inline {
+    var ($self'productID, $self'orderID) = $self;
+    var ($msg'receiverAddress, $msg'amount) = $msg;
+    $global_send($SendParameters$_constructor_to_value_bounce_mode($msg'receiverAddress, $msg'amount, true, (64 + 2)));
+    ($self'productID, $self'orderID)~$OrderContract$_fun_reply(__gen_cell_comment_0f611a7191453427fc6e97d8dd13bac71909990bc7e1f712ecbc04d998c176ad());
+    return (($self'productID, $self'orderID), ());
+}
+
+(((slice, slice)), ()) $OrderContract$_internal_binary_Deploy((slice, slice) $self, (int) $deploy) impure inline {
+    var ($self'productID, $self'orderID) = $self;
+    var ($deploy'queryId) = $deploy;
+    ($self'productID, $self'orderID)~$OrderContract$_fun_notify($DeployOk$_store_cell($DeployOk$_constructor_queryId($deploy'queryId)));
+    return (($self'productID, $self'orderID), ());
+}
+
+;;
+;; Get methods of a Contract OrderContract
+;;
+
+_ %balance() method_id(104128) {
+    var self = $OrderContract$_contract_load();
+    var res = self~$OrderContract$_fun_balance();
+    return res;
+}
+
+_ supported_interfaces() method_id {
+    return (
+        "org.ton.introspection.v0"H >> 128,
+        "org.ton.abi.ipfs.v0"H >> 128,
+        "org.ton.deploy.lazy.v0"H >> 128,
+        "org.ton.debug.v0"H >> 128,
+        "org.ton.chain.workchain.v0"H >> 128
+    );
+}
+
+_ get_abi_ipfs() method_id {
+    return "ipfs://QmVQqbdSLkWAioNeron7aHuoaf2wic7akwwbLUAmifFTAV";
+}
+
+_ lazy_deployment_completed() method_id {
+    return get_data().begin_parse().load_int(1);
+}
+
+;;
+;; Routing of a Contract OrderContract
+;;
+
+((slice, slice), int) $OrderContract$_contract_router_internal((slice, slice) self, int msg_bounced, slice in_msg) impure inline_ref {
+    ;; Handle bounced messages
+    if (msg_bounced) {
+        return (self, true);
+    }
+    
+    ;; Parse incoming message
+    int op = 0;
+    if (slice_bits(in_msg) >= 32) {
+        op = in_msg.preload_uint(32);
+    }
+    
+    
+    ;; Receive empty message
+    if ((op == 0) & (slice_bits(in_msg) <= 32)) {
+        self~%$OrderContract$_internal_empty();
+        return (self, true);
+    }
+    
+    ;; Receive TransferAmount message
+    if (op == 3679069739) {
+        var msg = in_msg~$TransferAmount$_load();
+        self~$OrderContract$_internal_binary_TransferAmount(msg);
+        return (self, true);
+    }
+    
+    ;; Receive Deploy message
+    if (op == 2490013878) {
+        var msg = in_msg~$Deploy$_load();
+        self~$OrderContract$_internal_binary_Deploy(msg);
+        return (self, true);
+    }
+    
+    return (self, false);
+}
+
+() recv_internal(int msg_value, cell in_msg_cell, slice in_msg) impure {
+    
+    ;; Context
+    var cs = in_msg_cell.begin_parse();
+    var msg_flags = cs~load_uint(4);
+    var msg_bounced = -(msg_flags & 1);
+    slice msg_sender_addr = __tact_verify_address(cs~load_msg_addr());
+    __tact_context = (msg_bounced, msg_sender_addr, msg_value, cs);
+    __tact_context_sender = msg_sender_addr;
+    
+    ;; Load contract data
+    var self = $OrderContract$_contract_load();
+    
+    ;; Handle operation
+    int handled = self~$OrderContract$_contract_router_internal(msg_bounced, in_msg);
+    
+    ;; Throw if not handled
+    throw_unless(130, handled);
+    
+    ;; Persist state
+    $OrderContract$_contract_store(self);
+}

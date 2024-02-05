@@ -1,0 +1,152 @@
+#pragma version =0.4.3;
+#pragma allow-post-modification;
+#pragma compute-asm-ltr;
+
+#include "ton_MarkeTon.headers.fc";
+#include "ton_MarkeTon.stdlib.fc";
+#include "ton_MarkeTon.constants.fc";
+#include "ton_MarkeTon.storage.fc";
+
+;;
+;; Contract MarkeTon functions
+;;
+
+tuple $MarkeTon$_contract_init() impure inline_ref {
+    tuple $self = null();
+    return $self;
+}
+
+(tuple, slice) $MarkeTon$_fun_balance(tuple $self) impure inline_ref {
+    var ($self) = $self;
+    return ($self, $Int$_fun_toCoinsString(__tact_my_balance()));
+}
+
+(tuple, slice) $MarkeTon$_fun_orderAddress(tuple $self, slice $productID, slice $orderID) impure inline_ref {
+    var ($self) = $self;
+    return ($self, $global_contractAddress($OrderContract$_init_child(__tact_context_sys, $productID, $orderID)));
+}
+
+;;
+;; Receivers of a Contract MarkeTon
+;;
+
+((tuple), ()) %$MarkeTon$_internal_empty(tuple $self) impure inline {
+    var $self = $self;
+    __tact_debug_str(__gen_slice_string_22a6a2a99263a76cf7ab87fc0ed5e0f266dd926fac11446b1c38bc84fff439ad());
+    return ($self, ());
+}
+
+((tuple), ()) $MarkeTon$_internal_binary_CreateOrderRequest(tuple $self, (slice, slice) $msg) impure inline {
+    var $self = $self;
+    var ($msg'productID, $msg'orderID) = $msg;
+    var ($init'code, $init'data) = $OrderContract$_init_child(__tact_context_sys, $msg'productID, $msg'orderID);
+    slice $address = $global_contractAddress(($init'code, $init'data));
+    $global_send($SendParameters$_constructor_to_body_value_mode_code_data($address, null(), 0, (2 + 64), $init'code, $init'data));
+    return ($self, ());
+}
+
+((tuple), ()) $MarkeTon$_internal_binary_Deploy(tuple $self, (int) $deploy) impure inline {
+    var $self = $self;
+    var ($deploy'queryId) = $deploy;
+    $self~$MarkeTon$_fun_notify($DeployOk$_store_cell($DeployOk$_constructor_queryId($deploy'queryId)));
+    return ($self, ());
+}
+
+;;
+;; Get methods of a Contract MarkeTon
+;;
+
+_ %balance() method_id(104128) {
+    var self = $MarkeTon$_contract_load();
+    var res = self~$MarkeTon$_fun_balance();
+    return res;
+}
+
+_ %orderAddress(slice $$productID, slice $$orderID) method_id(101845) {
+    slice $productID = $$productID;
+    slice $orderID = $$orderID;
+    var self = $MarkeTon$_contract_load();
+    var res = self~$MarkeTon$_fun_orderAddress($productID, $orderID);
+    return res;
+}
+
+_ supported_interfaces() method_id {
+    return (
+        "org.ton.introspection.v0"H >> 128,
+        "org.ton.abi.ipfs.v0"H >> 128,
+        "org.ton.deploy.lazy.v0"H >> 128,
+        "org.ton.debug.v0"H >> 128,
+        "org.ton.chain.workchain.v0"H >> 128
+    );
+}
+
+_ get_abi_ipfs() method_id {
+    return "ipfs://QmcY37Vju2zequQGdZAHdpPEw3MgWEQNLvwS2zpH2g54a2";
+}
+
+_ lazy_deployment_completed() method_id {
+    return get_data().begin_parse().load_int(1);
+}
+
+;;
+;; Routing of a Contract MarkeTon
+;;
+
+(tuple, int) $MarkeTon$_contract_router_internal(tuple self, int msg_bounced, slice in_msg) impure inline_ref {
+    ;; Handle bounced messages
+    if (msg_bounced) {
+        return (self, true);
+    }
+    
+    ;; Parse incoming message
+    int op = 0;
+    if (slice_bits(in_msg) >= 32) {
+        op = in_msg.preload_uint(32);
+    }
+    
+    
+    ;; Receive empty message
+    if ((op == 0) & (slice_bits(in_msg) <= 32)) {
+        self~%$MarkeTon$_internal_empty();
+        return (self, true);
+    }
+    
+    ;; Receive CreateOrderRequest message
+    if (op == 2744249579) {
+        var msg = in_msg~$CreateOrderRequest$_load();
+        self~$MarkeTon$_internal_binary_CreateOrderRequest(msg);
+        return (self, true);
+    }
+    
+    ;; Receive Deploy message
+    if (op == 2490013878) {
+        var msg = in_msg~$Deploy$_load();
+        self~$MarkeTon$_internal_binary_Deploy(msg);
+        return (self, true);
+    }
+    
+    return (self, false);
+}
+
+() recv_internal(int msg_value, cell in_msg_cell, slice in_msg) impure {
+    
+    ;; Context
+    var cs = in_msg_cell.begin_parse();
+    var msg_flags = cs~load_uint(4);
+    var msg_bounced = -(msg_flags & 1);
+    slice msg_sender_addr = __tact_verify_address(cs~load_msg_addr());
+    __tact_context = (msg_bounced, msg_sender_addr, msg_value, cs);
+    __tact_context_sender = msg_sender_addr;
+    
+    ;; Load contract data
+    var self = $MarkeTon$_contract_load();
+    
+    ;; Handle operation
+    int handled = self~$MarkeTon$_contract_router_internal(msg_bounced, in_msg);
+    
+    ;; Throw if not handled
+    throw_unless(130, handled);
+    
+    ;; Persist state
+    $MarkeTon$_contract_store(self);
+}
